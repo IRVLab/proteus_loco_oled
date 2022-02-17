@@ -10,6 +10,7 @@ import rospy
 from rosnode import get_node_names
 from rospy import service
 from geometry_msgs.msg import Transform
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 import xml.etree.ElementTree as ET
 from proteus.display_phrase import DisplayPhrase, DNode
@@ -24,7 +25,7 @@ oled.draw_loco_logo()
 oled.display()
 
 oled.set_text_size(2)
-oled.set_text_color()
+oled.set_text_color() # Important to remmeber to actually set text color.
 
 def service_cb(req, display_phrase):
     rospy.logdebug('Service callback for display phrase %s'%(display_phrase.id))
@@ -41,28 +42,21 @@ def service_cb(req, display_phrase):
 
 def execute_trigger(req, display_phrase):
     for d in display_phrase.dnodes:
-        oled.set_cursor(0,20)
-        oled.clear_display() #flush any previous data away
-        oled.print_line(d.text.data) # print a line
-        rospy.loginfo(d.text.data)
-        oled.display() #This function draws what's in the buffer.
+        draw_on_oled(d.text.data)
 
         # Wait for the appropriate time
         sleep(d.duration.seconds) 
 
         # Clear the display
         oled.clear_display() #Clean up the buffer (the reason we do this and pre-clear is that we can't trust other code to clear the buffer for us.)
-        oled.display()
+        # oled.display()
 
     return True
 
 def execute_directional(req, display_phrase):
     direction = cardinalize(req.transform)
     for d in display_phrase.dnodes:
-        oled.set_cursor(0,0)
-        oled.clear_display() #flush any previous data away
-        oled.print_line(d.text.data.format(direction)) # print a line
-        # oled.display() #This function draws what's in the buffer.
+        draw_on_oled(d.text.data.format(direction))
 
         # Wait for the appropriate time
         sleep(d.duration.seconds) 
@@ -77,12 +71,9 @@ def execute_target(req, display_phrase):
     return False
 
 def execute_quantity(req, display_phrase):
-    quant = req.quantity
+    quant = req.quantity * 100
     for d in display_phrase.dnodes:
-        oled.set_cursor(0,0)
-        oled.clear_display() #flush any previous data away
-        oled.print_line(d.text.data.format(quant)) # print a line
-        # oled.display() #This function draws what's in the buffer.
+        draw_on_oled(d.text.data.format(quant))
 
         # Wait for the appropriate time
         sleep(d.duration.seconds) 
@@ -94,7 +85,99 @@ def execute_quantity(req, display_phrase):
     return True
 
 def cardinalize(transform):
-    return "left"
+    q = transform.rotation
+    rpy = euler_from_quaternion([q.x, q.y, q.z, q.w]) #We only actually need pitch and yaw, roll is ignored here.
+
+    ret = "" # Return string.
+
+    # Pitch handling
+    if rpy[1] > 0:
+        ret+= "up"
+    elif rpy[1] < 0:
+        ret+= "down"
+
+    # Add a conjunction if there's pitch involved.
+    if rpy[2] != 0:
+        ret+= " and "
+
+    # Yaw handling
+    if rpy[2] > 0:
+        ret+= "left"
+    elif rpy[2] < 0:
+        ret += "right"
+
+    return ret
+
+def draw_on_oled(text):
+    line_size = 9
+    lines = list()
+    l = ""
+
+    words = text.split(" ")
+    word_ls = [len(w) for w in words]
+
+    if (len(words) < 4) and (max(word_ls) < 11):
+        # If every word will fit on its own line, just make it happen
+        lines.extend(words)
+    elif (len(words) == 1) and (word_ls[0] > 8):
+        midpoint = int(word_ls[0]/3) * 2
+        word = words[0]
+        lines.append(word[0:midpoint])
+        lines.append(word[midpoint:])
+
+    else:
+        fill = 0
+        for k, w in enumerate(words):
+            word_len = word_ls[k]
+            if (word_len + 1) < (line_size - fill):
+                # Enough space for word and space
+                l += w + " "
+                fill += (word_len + 1)
+            elif word_len < (line_size - fill):
+                # Enough space for word only, so put in in, then start a new line
+                l += w
+                lines.append(l)
+
+                l = ""
+                fill = 0
+            else:
+                #Not enough space in the line for the whole word
+                space = line_size - fill
+                if space < 3:
+                    # Only 1-2 letters could fit on this line, put the whole word on the next line
+                    lines.append(l)
+
+                    l = w + " "
+                    fill = word_ls[k] + 1
+                else:
+                    # More than 2 letters could fit on this line, split the word and go to next line.
+                    l += w[0:space+1]
+
+                    lines.append(l)
+                    l = w[space+1:]
+                    fill = len(l)
+
+
+        lines.append(l) # Get the last line in there.
+
+    row = 5
+    for l in lines:
+        # Pad either side of the line with spaces.
+        flip = True
+        while len(l) < line_size:
+            if flip:
+                l = " " + l
+                flip = False
+            else:
+                l += " "
+                flip = True
+
+        oled.set_cursor(0, row)
+        oled.print_line(l)
+
+        row += 20
+
+    return
 
 if __name__ == '__main__':
     rospy.loginfo('Initializing the LoCO OLED server')
@@ -172,7 +255,7 @@ if __name__ == '__main__':
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
-        # oled.display() # Draw whatever is in the buffer.
+        oled.display() # Draw whatever is in the buffer.
         rate.sleep()
 
 else:
