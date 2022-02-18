@@ -1,4 +1,4 @@
-#! /usr/bin/python3 
+#! /usr/bin/python
 
 import sys, math, threading, signal
 from time import sleep
