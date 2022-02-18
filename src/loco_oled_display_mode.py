@@ -97,7 +97,7 @@ def cardinalize(transform):
         ret+= "down"
 
     # Add a conjunction if there's pitch involved.
-    if rpy[2] != 0:
+    if rpy[1] != 0 and rpy[2] != 0:
         ret+= " and "
 
     # Yaw handling
