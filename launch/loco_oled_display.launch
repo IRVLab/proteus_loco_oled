@@ -1,6 +1,6 @@
 <launch>
 <node name="serial_bridge_right" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyACM0" output="screen"/>
     <group ns="loco/proteus/">
-        <node name="loco_oled_display_mode" pkg="proteus_loco_oled" type="loco_oled_display_mode.py" output="screen"/>
+        <node name="loco_oled_display_mode" pkg="proteus_oled_loco" type="loco_oled_display_mode.py" output="screen"/>
     </group>
 </launch>
