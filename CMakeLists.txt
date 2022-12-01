@@ -10,6 +10,8 @@ project(proteus_oled_loco)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   rosserial_python
+  proteus
+  proteus_msgs
 )
 
 ## System dependencies are found with CMake's conventions

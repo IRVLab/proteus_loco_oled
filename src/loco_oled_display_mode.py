@@ -14,7 +14,7 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 import xml.etree.ElementTree as ET
 from proteus.display_phrase import DisplayPhrase, DNode
-from proteus.srv import SymbolTrigger, SymbolDirectional, SymbolTarget, SymbolQuantity
+from proteus_msgs.srv import SymbolTrigger, SymbolDirectional, SymbolTarget, SymbolQuantity
 
 # rospy.init_node('loco_oled_server', argv=None, anonymous=True)
 
