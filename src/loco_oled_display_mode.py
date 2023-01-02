@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 import sys, math, threading, signal
 from time import sleep
@@ -13,7 +13,7 @@ from geometry_msgs.msg import Transform
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 import xml.etree.ElementTree as ET
-from proteus.display_phrase import DisplayPhrase, DNode
+from proteus.vector.oled import DisplayPhrase, DNode
 from proteus_msgs.srv import SymbolTrigger, SymbolDirectional, SymbolTarget, SymbolQuantity
 
 # rospy.init_node('loco_oled_server', argv=None, anonymous=True)
