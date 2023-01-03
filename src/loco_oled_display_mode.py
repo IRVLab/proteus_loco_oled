@@ -10,7 +10,7 @@ import rospy
 from rosnode import get_node_names
 from rospy import service
 from geometry_msgs.msg import Transform
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+# from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 import xml.etree.ElementTree as ET
 from proteus.vector.oled import DisplayPhrase, DNode
@@ -54,18 +54,19 @@ def execute_trigger(req, display_phrase):
     return True
 
 def execute_directional(req, display_phrase):
-    direction = cardinalize(req.transform)
-    for d in display_phrase.dnodes:
-        draw_on_oled(d.text.data.format(direction))
-
-        # Wait for the appropriate time
-        sleep(d.duration.seconds) 
-
-        # Clear the display
-        oled.clear_display() #Clean up the buffer (the reason we do this and pre-clear is that we can't trust other code to clear the buffer for us.)
-        # oled.display()
-
     return True
+    # direction = cardinalize(req.transform)
+    # for d in display_phrase.dnodes:
+    #     draw_on_oled(d.text.data.format(direction))
+
+    #     # Wait for the appropriate time
+    #     sleep(d.duration.seconds) 
+
+    #     # Clear the display
+    #     oled.clear_display() #Clean up the buffer (the reason we do this and pre-clear is that we can't trust other code to clear the buffer for us.)
+    #     # oled.display()
+
+    # return True
 
 def execute_target(req, display_phrase):
     return False
@@ -219,16 +220,13 @@ if __name__ == '__main__':
         disp_phrases[d.id] = d
 
     # Check for symbol matchup.
-    for s in symbols:
-        for key in disp_phrases:
-            d = disp_phrases[key]
-            if s == d.id:
-                rospy.loginfo("Found match beteween symbol %s and display phrase %s, associating data."%(s, d.id))
-                rospy.logdebug("Call type: %s"%(symbols.get(s).get('call_type')))
-                d.set_call_type(symbols.get(s).get('call_type'))
+    for sname, s in symbols.items():
+        for key, d in disp_phrases.items():
+            if s['id'] == d.id:
+                rospy.loginfo(f"Found match beteween symbol {s['id']} and display phrase {d.id}, associating data.")
+                rospy.logdebug(f"Call type: {s['input_required']}")
+                d.set_call_type(s['input_required'])
                 break
-
-    print(disp_phrases)
 
     # Setup service calls
     for key, disp in disp_phrases.items():
@@ -244,7 +242,7 @@ if __name__ == '__main__':
         else:
             rospy.logwarn("Unexpected call type {} for display-phrase {}".format(disp.call_type, disp.name))
 
-        service_name = 'digital_display/'+ disp.name.replace(' ', '_')
+        service_name = 'oled/'+ disp.name.replace(' ', '_')
 
         rospy.loginfo('Advertising a service for display phrase %s at service endpoint: %s'%(disp.id, service_name))
         rospy.Service(service_name, service_class, lambda req, disp=disp: service_cb(req, disp))
